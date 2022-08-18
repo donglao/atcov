@@ -82,7 +82,7 @@ if __name__ == '__main__':
     kwargs = {'num_workers':1, 'pin_memory':True}
     
     # batchsize_test = int(len(test_set)/2)
-    batchsize_test = 32
+    batchsize_test = 64
     print('Batch size of the test set: ', batchsize_test)
     test_loader = torch.utils.data.DataLoader(dataset=test_set,
                                               batch_size=batchsize_test,
@@ -103,11 +103,13 @@ if __name__ == '__main__':
     #--------------------------------------------------------------------------
     # Build the model
     #--------------------------------------------------------------------------
-    #net = resnet20().cuda()
+    net = resnet20().cuda()
     #net = resnet32().cuda()
     #net = resnet44().cuda()
-    net = resnet56().cuda()
+    #net = resnet56().cuda()
     
+    #net = vgg11_bn().cuda()
+
     # Print the model's information
     paramsList = list(net.parameters())
     kk = 0
@@ -121,13 +123,13 @@ if __name__ == '__main__':
     print('Total number of parameters: ' + str(kk))
     
     sigma = 1
-    #lr = 0.12
-    lr = 0.012 # Changed
+    lr = 0.12
+    # lr = 1e-3 # Changed
     weight_decay = 5e-4
     
 
     optimizer = optim.SGD(net.parameters(), lr=lr, momentum=0.9, weight_decay=weight_decay, nesterov=True)
-    optimizer = optim.Adam(net.parameters(), lr=1e-5)
+    #optimizer = optim.Adam(net.parameters(), lr=lr, weight_decay=weight_decay)
 
     nepoch = 200
     for epoch in range(nepoch):
@@ -137,10 +139,11 @@ if __name__ == '__main__':
         # Training
         #----------------------------------------------------------------------
 
-        if epoch > 1 and epoch//100 == epoch/100.0:
+        if epoch > 1 and epoch//40 == epoch/40.0:
             lr = lr/10
             print("Descrease the Learning Rate, lr = ", lr)
             optimizer = optim.SGD(net.parameters(), lr=lr, momentum=0.9, weight_decay=weight_decay, nesterov=True)
+            #optimizer = optim.Adam(net.parameters(), lr=lr, weight_decay=weight_decay)
 
 
             
