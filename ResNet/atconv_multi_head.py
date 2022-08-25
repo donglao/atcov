@@ -9,13 +9,14 @@ class AttentionConv2D(torch.nn.Module):
         self.output_size = output_size
         self.kernel_size = kernel_size
         self.stride = stride
-        self.attention_size = input_size if attention_size is None else attention_size
+        self.attention_size = round(input_size/num_heads) if attention_size is None else attention_size
+        self.output_size_single_head = round(output_size/num_heads)
         self.dropout = torch.nn.Dropout(p=dropout)
         self.to_q = torch.nn.Linear(input_size, self.attention_size * num_heads)
         self.to_k = torch.nn.Linear(input_size, self.attention_size * num_heads)
-        self.to_v = torch.nn.Linear(input_size, self.output_size * num_heads)
+        self.to_v = torch.nn.Linear(input_size, self.output_size_single_head * num_heads)
         self.to_pos = torch.nn.Linear(self.input_size, self.attention_size * num_heads)
-        self.final = torch.nn.Linear(self.output_size * num_heads, self.output_size)
+        self.final = torch.nn.Linear(self.output_size_single_head * num_heads, self.output_size)
         self.layernorm = torch.nn.LayerNorm(self.input_size)
         self.num_heads = num_heads
 
@@ -64,7 +65,7 @@ class AttentionConv2D(torch.nn.Module):
 
         attention = torch.einsum('bhwa,bahwp->bphw', Q, K) * self.scale
 #        attention = torch.einsum('bahwp,bahwp->bphw', Q, K) * self.scale
-        attention = attention.softmax(dim=1) # + self.eps
+        attention = attention.softmax(dim=1) + self.eps
         # 'attention' has shape [batch, neighbor_size, h, w]
         return attention
 
@@ -91,7 +92,7 @@ class AttentionConv2D(torch.nn.Module):
         for i in range(self.num_heads):
             attention = self.compute_attention(K[:,i*self.attention_size:(i+1)*self.attention_size,:,:,:], Q[:,:,:,i*self.attention_size:(i+1)*self.attention_size])
             # 'attention' has shape [batch, neighbor_size, h, w]
-            x.append(torch.einsum('bchwn,bnhw->bhwc', V[:,i*self.output_size:(i+1)*self.output_size,:,:,:], attention))
+            x.append(torch.einsum('bchwn,bnhw->bhwc', V[:,i*self.output_size_single_head:(i+1)*self.output_size_single_head,:,:,:], attention))
         
         output = torch.cat(x,3)
         output = self.final(output)

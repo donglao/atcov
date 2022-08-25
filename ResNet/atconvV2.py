@@ -101,7 +101,7 @@ class AttentionConv2D(torch.nn.Module):
         V = self.to_v2(V)
 
         V_no_pos = self.expand_shift(V)
-        pos_V = self.to_posv(pos_emb).permute(1,0)
+        # pos_V = self.to_posv(pos_emb).permute(1,0)
         # pos_k = self.to_k(pos_emb).permute(1,0)
         # bias_k = self.to_k(torch.zeros(self.input_size).to(device))
         V = V_no_pos # + pos_V[None, :, None, None, :] #- bias_k[None, :,None, None, None]

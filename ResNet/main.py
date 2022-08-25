@@ -108,7 +108,7 @@ if __name__ == '__main__':
     #net = resnet44().cuda()
     #net = resnet56().cuda()
     
-    #net = vgg11_bn().cuda()
+    # net = vgg11().cuda()
 
     # Print the model's information
     paramsList = list(net.parameters())
@@ -142,8 +142,8 @@ if __name__ == '__main__':
         if epoch > 1 and epoch//40 == epoch/40.0:
             lr = lr/10
             print("Descrease the Learning Rate, lr = ", lr)
-            optimizer = optim.SGD(net.parameters(), lr=lr, momentum=0.9, weight_decay=weight_decay, nesterov=True)
-            #optimizer = optim.Adam(net.parameters(), lr=lr, weight_decay=weight_decay)
+            # optimizer = optim.SGD(net.parameters(), lr=lr, momentum=0.9, weight_decay=weight_decay, nesterov=True)
+            optimizer.param_groups[0]['lr'] = lr
 
 
             
