@@ -44,23 +44,43 @@ class AttentionConv2D(torch.nn.Module):
         return pe[:seq_length].to(device)
 
     def expand_shift(self, K):
-        K = K.permute(0,3,1,2)
-        _, _, h, w = K.shape
-        K_expanded = self.zero_padding(K)
-        # 'K_expanded' has shape [batch, attention_size, h+padding*2, w+padding*2, neighbor_size]
+        '''
+        Arg(s):
+            K : torch.Tensor[float32]
+                N x H x W x C tensor
+        Returns:
+            torch.Tensor[float32] : N x C x H x W x k
+        '''
 
-        K = torch.zeros_like(K)[:,:,:,:,None].repeat(1,1,1,1,self.kernel_size**2)
+        K = K.permute(0, 3, 1, 2)
+
+        _, _, h, w = K.shape
+
+        K_expanded = self.zero_padding(K)
+
+        K = torch.unsqueeze(K, dim=-1).repeat(1, 1, 1, 1, self.kernel_size**2)
 
         pos = 0
         max_shift = int((self.kernel_size - 1) / 2)
+
         for i in range(-max_shift, max_shift + 1):
             for j in range(-max_shift, max_shift + 1):
-                K[:,:,:,:,pos] = K_expanded[:,:,i+max_shift:i+h+max_shift,j+max_shift:j+w+max_shift]
+
+                if i == 0 and j == 0:
+                    pos += 1
+                    continue
+
+                height_start = i + max_shift
+                height_end = height_start + h
+
+                width_start = j + max_shift
+                width_end = width_start + w
+
+                K[:, :, :, :, pos] = K_expanded[:, :, height_start:height_end, width_start:width_end]
                 pos += 1
 
         # 'K' has shape [batch, channel_size, h, w, neighbor_size]
         return K
-
 
     def compute_attention(self, K, Q):
         # 'Q' has shape [batch, h, w, attention_size]
@@ -108,7 +128,7 @@ class AttentionConv2D(torch.nn.Module):
 
 
         attention = self.compute_attention(K, Q)
-        
+
         # 'attention' has shape [batch, neighbor_size, h, w]
         output = torch.einsum('bchwn,bnhw->bchw', V, attention)
 
